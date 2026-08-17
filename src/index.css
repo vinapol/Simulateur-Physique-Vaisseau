@@ -1,0 +1,54 @@
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
+
+:root {
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  --ink: #132433;
+  --muted: #5a7184;
+  --accent: #0e7c6b;
+  --accent-deep: #085a4d;
+  --highlight: #e07a2f;
+  --surface: rgba(255, 252, 247, 0.78);
+  --surface-solid: #fffdf9;
+  --border: rgba(19, 36, 51, 0.12);
+  --grid: rgba(19, 36, 51, 0.08);
+  --axis: rgba(19, 36, 51, 0.22);
+
+  --bg-1: #d9ebe4;
+  --bg-2: #f3e6d4;
+  --bg-3: #c5dce8;
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  background: var(--bg-1);
+}
+
+button,
+input {
+  font: inherit;
+}
