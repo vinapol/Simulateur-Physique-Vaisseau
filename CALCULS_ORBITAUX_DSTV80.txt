@@ -1,0 +1,128 @@
+================================================================================
+          CALCULS ORBITAUX & PHYSIQUE DE MISSION · VAISSEAU DSTV-80
+================================================================================
+Fichier de référence pour vérification manuelle des équations du simulateur
+Dernière mise à jour : 17/08/2026
+Projet : Simulateur Physique & Vaisseau Spatial (DSTV-80)
+================================================================================
+
+
+1. MASSIQUE, CENTRE DE MASSE & PROPULSION DU VAISSEAU (src/physics/spacecraft.ts)
+--------------------------------------------------------------------------------
+
+  1.1 Masse Totale M_totale (tonnes) :
+      M_totale = M_seche + M_ergols + M_cargaison
+
+      Où :
+      - M_seche = M_poutre_base (22 t) + sum(M_module_sec)
+      - M_ergols = sum(M_ergols_module)  [LH2 pour NTP / Argon pour NEP]
+      - M_cargaison = Masse des caissons de fret (Méga-caissons)
+
+  1.2 Centre de Masse (CoM) sur l'axe longitudinal Z (mètres) :
+      Z_CoM = sum(M_i * Z_i) / M_totale
+
+      Positions Z des slots sur la structure :
+      - Slot Avant        : Z = +54,0 m
+      - Slot Médian       : Z =   0,0 m
+      - Slot Intermédiaire: Z = -11,0 m  (décalé à -26,0 m si Heavy Cargo monté)
+      - Slot Arrière      : Z = -50,0 m
+      - Poutre nue seule   : Z = -14,5 m
+
+  1.3 Équation de Tsiolkovski (Delta-v disponible initial) :
+      Δv_dispo = Isp * g0 * ln( M_totale / M_combustion_complete )
+
+      Où :
+      - g0 = 9,80665 m/s² (accélération de la pesanteur standard)
+      - M_combustion_complete = M_seche + M_cargaison
+      - Isp = Impulsion spécifique du moteur (912 s pour NTP, 4500 s pour NEP)
+
+  1.4 Poussée et Accélération Instantanée :
+      F_reelle = F_nominale * Throttle                     (en Newtons)
+      a = F_reelle / (M_totale * 1000)                      (en m/s²)
+
+
+2. CONSTANTES ASTRONOMIQUES & REPERES HELIOCENTRIQUES (src/physics/orbitalTransfers.ts)
+--------------------------------------------------------------------------------
+
+  2.1 Constantes Fondamentales :
+      - Unité Astronomique (UA) : 1 UA = 149 597 870 700 m
+      - Paramètre gravitationnel du Soleil (µ_Soleil) : µ_⊙ = 1,3271244 × 10²⁰ m³/s²
+
+  2.2 Orbite Terrestre (r1) :
+      - Rayon orbital : r1 = 1,0000 UA = 149,598 × 10⁹ m
+      - Période orbitale : T_Terre = 365,25 jours
+      - Vitesse angulaire : ω_Terre = 2π / 365,25 ≈ 0,01720242 rad/jour
+
+  2.3 Orbite Martienne (r2) :
+      - Rayon orbital : r2 = 1,5237 UA = 227,937 × 10⁹ m
+      - Période orbitale : T_Mars = 687,00 jours
+      - Vitesse angulaire : ω_Mars = 2π / 687,00 ≈ 0,00914583 rad/jour
+
+  2.4 Période Synodique Terre–Mars (T_synodique) :
+      T_synodique = 1 / | (1 / T_Terre) - (1 / T_Mars) |
+                  = 1 / | (1 / 365,25) - (1 / 687,00) | ≈ 779,94 jours
+
+
+3. TRANSFERT IMPULSIONNEL NTP (HOHMANN / CONJONCTION)
+--------------------------------------------------------------------------------
+
+  3.1 Géométrie de l'Ellipse de Hohmann :
+      - Demi-grand axe : a_Hohmann = (r1 + r2) / 2 = 1,26185 UA = 188,770 × 10⁹ m
+      - Excentricité   : e = (r2 - r1) / (r2 + r1) = 0,5237 / 2,5237 ≈ 0,20751
+
+  3.2 Temps de Transit Théorique vs Profil Étalonné :
+      - Temps de demi-ellipse théo : T_Hohmann = π * sqrt( a³ / µ_⊙ ) ≈ 258,75 jours
+      - Profil Conjonction DSTV-Liner : t_aller = 140 j ; t_retour = 140 j
+
+  3.3 Équation de Kepler & Position Instantanée r(t) :
+      Pour t ∈ [0, t_transit] :
+      - Anomalie moyenne : M(t) = π * (t / t_transit)
+      - Équation de Kepler : E - e * sin(E) = M(t)   [Résolue par Newton-Raphson]
+      - Anomalie vraie ν(t) :
+        ν(t) = 2 * atan2( sqrt(1+e) * sin(E/2), sqrt(1-e) * cos(E/2) )
+      - Rayon héliocentrique : r(t) = a * (1 - e²) / (1 + e * cos(ν))
+
+  3.4 Vitesse Héliocentrique (Équation Vis-Viva) :
+      v(r) = sqrt( µ_⊙ * ( 2/r - 1/a_Hohmann ) )            (en m/s)
+
+  3.5 Décomposition du Budget Delta-v (4 manœuvres réelles) :
+      - Manœuvre 1 : Trans-Mars Injection (TMI depuis HEO)      : Δv_TMI = 3,60 km/s
+      - Manœuvre 2 : Capture Mars (Orbite haute aréocentrique)  : Δv_cap_M = 1,10 km/s
+      - Manœuvre 3 : Trans-Earth Injection (TEI depuis Mars)    : Δv_TEI = 1,10 km/s
+      - Manœuvre 4 : Capture Terre (HEO / Point Lagrange EML-1) : Δv_cap_T = 1,00 km/s
+
+      Δv_total_NTP = Δv_TMI + Δv_cap_M + Δv_TEI + Δv_cap_T
+                   = 3,60 + 1,10 + 1,10 + 1,00 = 6,80 km/s
+
+      * Budget Transit Aller  : Δv_aller = 4,70 km/s
+      * Budget Transit Retour : Δv_retour = 2,10 km/s
+
+  3.6 Synchronisation des Phases Orbitales (Rendez-vous exact avec la Terre) :
+      Condition d'alignement pour que la Terre et le vaisseau se croisent à t_arrivee :
+      (ω_Terre - ω_Mars) * t_sejour ≡ (Δθ_aller + Δθ_retour) - ω_Terre * (t_aller + t_retour)  [mod 2π]
+
+      Formule exacte du temps de séjour martien t_sejour :
+      t_sejour = [ (2π - ω_Terre * (t_aller + t_retour)) mod 2π ] / (ω_Terre - ω_Mars) + k * T_synodique
+
+
+4. TRANSFERT SPIRALE FAVORABLE NEP (PROPULSION IONIQUE ARGON)
+--------------------------------------------------------------------------------
+
+  4.1 Équation de la Spirale Logarithmique Héliocentrique :
+      - Balayage angulaire total : Δθ = 2,45 * 2π = 4,90 * π rad ≈ 15,3938 rad
+      - Facteur de spirale k_NEP  : k_NEP = ln(r2 / r1) / Δθ = ln(1,5237) / 15,3938 ≈ 0,02735
+      - Rayon aller r(φ)          : r(φ) = r1 * exp( k_NEP * φ )   pour φ ∈ [0, Δθ]
+      - Rayon retour r(φ)         : r(φ) = r2 * exp( -k_NEP * φ )  pour φ ∈ [0, Δθ]
+
+  4.2 Poussée Ionique Utile & Vitesse d'Éjection :
+      - Vitesse d'éjection des ions : ve = Isp * g0 = 4500 * 9,80665 = 44 130 m/s
+      - Poussée utile F (avec rendement η = 0,65) :
+        F = (2 * η * Puissance_Watts) / ve
+          = (2 * 0,65 * Puissance_kW * 1000) / 44 130          (en Newtons)
+
+  4.3 Budget Delta-v Total NEP :
+      - Transit Aller  : Δv_aller = 4,50 km/s
+      - Transit Retour : Δv_retour = 4,50 km/s
+      Δv_total_NEP = 4,50 + 4,50 = 9,00 km/s
+
+================================================================================

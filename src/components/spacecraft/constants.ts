@@ -82,3 +82,7 @@ export const WINDOW_GLOW = '#5ec8ff'
 export const CABLE = '#222328'
 export const TUNGSTEN = '#4a453c'
 export const COPPER = '#b87333'
+
+/** Demi-angle d’umbra minimal (vaisseau étroit). L’angle réel s’ouvre selon la charge. */
+export const SHIELD_HALF_ANGLE_DEG = 22
+export const SHIELD_HALF_ANGLE = (SHIELD_HALF_ANGLE_DEG * Math.PI) / 180

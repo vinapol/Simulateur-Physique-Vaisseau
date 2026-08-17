@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Calculs Orbitaux &amp; Physique - DSTV-80</title>
+<style>
+  body { font-family: 'Liberation Sans', sans-serif; margin: 20px; color: #1e293b; line-height: 1.6; }
+  h1 { color: #0284c7; border-bottom: 2px solid #0284c7; padding-bottom: 5px; font-size: 22pt; }
+  h2 { color: #0f766e; margin-top: 25px; font-size: 16pt; border-bottom: 1px solid #cbd5e1; }
+  h3 { color: #475569; margin-top: 15px; font-size: 13pt; }
+  p, li { font-size: 11pt; }
+  code, pre { font-family: 'Liberation Mono', monospace; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; }
+  .formula { background: #f8fafc; border-left: 4px solid #0284c7; padding: 8px 12px; margin: 10px 0; font-family: 'Liberation Mono', monospace; font-size: 10.5pt; }
+  .highlight { color: #0369a1; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>CALCULS ORBITAUX &amp; PHYSIQUE DE MISSION · VAISSEAU DSTV-80</h1>
+<p><em>Fichier de référence officiel pour la vérification manuelle des équations du simulateur.</em><br>
+<strong>Projet :</strong> Simulateur Physique &amp; Vaisseau Spatial (DSTV-80) · <strong>Date :</strong> 17/08/2026</p>
+
+<h2>1. MASSIQUE, CENTRE DE MASSE &amp; PROPULSION (src/physics/spacecraft.ts)</h2>
+
+<h3>1.1 Masse Totale M_totale (tonnes)</h3>
+<div class="formula">M_totale = M_seche + M_ergols + M_cargaison</div>
+<ul>
+  <li><strong>M_seche</strong> = M_poutre_base (22 t) + Σ(M_module_sec)</li>
+  <li><strong>M_ergols</strong> = Σ(M_ergols_module) [LH₂ pour NTP / Argon pour NEP]</li>
+  <li><strong>M_cargaison</strong> = Masse des caissons de fret (Méga-caissons)</li>
+</ul>
+
+<h3>1.2 Centre de Masse (CoM) sur l’axe longitudinal Z (mètres)</h3>
+<div class="formula">Z_CoM = Σ(M_i · Z_i) / M_totale</div>
+<p>Positions Z des slots sur la structure du vaisseau :</p>
+<ul>
+  <li>Slot Avant : Z = +54,0 m</li>
+  <li>Slot Médian : Z = 0,0 m</li>
+  <li>Slot Intermédiaire : Z = -11,0 m (décalé à -26,0 m si Heavy Cargo monté)</li>
+  <li>Slot Arrière : Z = -50,0 m</li>
+  <li>Poutre nue seule : Z = -14,5 m</li>
+</ul>
+
+<h3>1.3 Équation de Tsiolkovski (Delta-v disponible initial)</h3>
+<div class="formula">Δv_dispo = Isp · g₀ · ln( M_totale / (M_seche + M_cargaison) )</div>
+<ul>
+  <li><strong>g₀</strong> = 9,80665 m/s² (accélération de la pesanteur standard)</li>
+  <li><strong>Isp</strong> = Impulsion spécifique (912 s pour NTP, 4500 s pour NEP)</li>
+</ul>
+
+<h3>1.4 Poussée et Accélération Instantanée</h3>
+<div class="formula">
+F_reelle = F_nominale · Throttle (en Newtons)<br>
+a = F_reelle / (M_totale · 1000) (en m/s²)
+</div>
+
+<h2>2. CONSTANTES ASTRONOMIQUES &amp; REPERES HELIOCENTRIQUES (src/physics/orbitalTransfers.ts)</h2>
+<ul>
+  <li><strong>Unité Astronomique (UA) :</strong> 1 UA = 149 597 870 700 m</li>
+  <li><strong>Paramètre gravitationnel du Soleil (µ_Soleil) :</strong> µ_⊙ = 1,3271244 × 10²⁰ m³/s²</li>
+  <li><strong>Orbite Terrestre (r₁) :</strong> r₁ = 1,0000 UA · T_Terre = 365,25 j · ω_Terre = 2π / 365,25 ≈ 0,01720242 rad/j</li>
+  <li><strong>Orbite Martienne (r₂) :</strong> r₂ = 1,5237 UA · T_Mars = 687,00 j · ω_Mars = 2π / 687,00 ≈ 0,00914583 rad/j</li>
+  <li><strong>Période Synodique Terre–Mars :</strong> T_synodique = 1 / | (1/365,25) - (1/687,00) | ≈ 779,94 jours</li>
+</ul>
+
+<h2>3. TRANSFERT IMPULSIONNEL NTP (HOHMANN / CONJONCTION)</h2>
+
+<h3>3.1 Géométrie de l’Ellipse de Hohmann</h3>
+<ul>
+  <li><strong>Demi-grand axe :</strong> a_Hohmann = (r₁ + r₂) / 2 = 1,26185 UA = 188,770 × 10⁹ m</li>
+  <li><strong>Excentricité :</strong> e = (r₂ - r₁) / (r₂ + r₁) = 0,5237 / 2,5237 ≈ 0,20751</li>
+</ul>
+
+<h3>3.2 Temps de Transit Théorique vs Profil Étalonné</h3>
+<ul>
+  <li><strong>Temps de demi-ellipse théo :</strong> T_Hohmann = π · √( a³ / µ_⊙ ) ≈ 258,75 jours</li>
+  <li><strong>Profil Conjonction DSTV-Liner :</strong> t_aller = 140 j ; t_retour = 140 j</li>
+</ul>
+
+<h3>3.3 Équation de Kepler &amp; Position Instantanée r(t)</h3>
+<p>Pour t ∈ [0, t_transit] :</p>
+<div class="formula">
+M(t) = π · (t / t_transit)  [Anomalie moyenne]<br>
+E - e · sin(E) = M(t)      [Équation de Kepler - Newton-Raphson]<br>
+ν(t) = 2 · atan2( √(1+e) · sin(E/2), √(1-e) · cos(E/2) )  [Anomalie vraie]<br>
+r(t) = a · (1 - e²) / (1 + e · cos(ν))  [Rayon héliocentrique]<br>
+v(r) = √( µ_⊙ · ( 2/r - 1/a_Hohmann ) )  [Vitesse Vis-Viva en m/s]
+</div>
+
+<h3>3.4 Décomposition du Budget Delta-v (4 manœuvres réelles)</h3>
+<ol>
+  <li><strong>Trans-Mars Injection (TMI depuis HEO) :</strong> Δv_TMI = 3,60 km/s</li>
+  <li><strong>Capture Mars (Orbite haute aréocentrique) :</strong> Δv_cap_M = 1,10 km/s</li>
+  <li><strong>Trans-Earth Injection (TEI depuis Mars HEO) :</strong> Δv_TEI = 1,10 km/s</li>
+  <li><strong>Capture Terre (HEO / Point Lagrange EML-1) :</strong> Δv_cap_T = 1,00 km/s</li>
+</ol>
+<div class="formula">
+<span class="highlight">Δv_total_NTP = 3,60 + 1,10 + 1,10 + 1,00 = 6,80 km/s</span><br>
+• Budget Transit Aller : Δv_aller = 4,70 km/s<br>
+• Budget Transit Retour : Δv_retour = 2,10 km/s
+</div>
+
+<h3>3.5 Synchronisation des Phases Orbitales (Rendez-vous exact Terre)</h3>
+<p>Condition d’alignement pour que la Terre et le vaisseau se croisent à t_arrivee :</p>
+<div class="formula">
+(ω_Terre - ω_Mars) · t_sejour ≡ (Δθ_aller + Δθ_retour) - ω_Terre · (t_aller + t_retour) [mod 2π]<br><br>
+Formule exacte du temps de séjour martien t_sejour :<br>
+t_sejour = [ (2π - ω_Terre · (t_aller + t_retour)) mod 2π ] / (ω_Terre - ω_Mars) + k · T_synodique
+</div>
+
+<h2>4. TRANSFERT SPIRALE FAVORABLE NEP (PROPULSION IONIQUE ARGON)</h2>
+
+<h3>4.1 Équation de la Spirale Logarithmique Héliocentrique</h3>
+<ul>
+  <li><strong>Balayage angulaire total :</strong> Δθ = 2,45 · 2π = 4,90 · π rad ≈ 15,3938 rad</li>
+  <li><strong>Facteur de spirale k_NEP :</strong> k_NEP = ln(r₂ / r₁) / Δθ = ln(1,5237) / 15,3938 ≈ 0,02735</li>
+  <li><strong>Rayon aller r(φ) :</strong> r(φ) = r₁ · exp( k_NEP · φ ) pour φ ∈ [0, Δθ]</li>
+  <li><strong>Rayon retour r(φ) :</strong> r(φ) = r₂ · exp( -k_NEP · φ ) pour φ ∈ [0, Δθ]</li>
+</ul>
+
+<h3>4.2 Poussée Ionique Utile &amp; Vitesse d’Éjection</h3>
+<div class="formula">
+ve = Isp · g₀ = 4500 · 9,80665 = 44 130 m/s<br>
+F = (2 · η · Puissance_Watts) / ve = (2 · 0,65 · Puissance_kW · 1000) / 44 130 (en Newtons)
+</div>
+
+<h3>4.3 Budget Delta-v Total NEP</h3>
+<div class="formula">
+• Transit Aller : Δv_aller = 4,50 km/s<br>
+• Transit Retour : Δv_retour = 4,50 km/s<br>
+<span class="highlight">Δv_total_NEP = 4,50 + 4,50 = 9,00 km/s</span>
+</div>
+
+</body>
+</html>

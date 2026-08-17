@@ -1,55 +1,55 @@
-import { useFrame } from '@react-three/fiber'
-import { useRef } from 'react'
-import type { Group } from 'three'
-import { HabitatInterior } from './HabitatInterior'
-import { CentrifugeRing, FixedSpine } from './ShipParts'
-import { TransferElevator } from './TransferElevator'
+import { getShipModule } from './modules/catalog'
+import { CentralSpine } from './modules/CentralSpine'
+import { useShipConfiguration } from '../../hooks/useShipConfiguration'
+import { useShipTelemetry } from '../../hooks/useShipTelemetry'
 
-export type FpvMode = 'none' | 'cabin' | 'habitat'
+function CenterOfMassMarker() {
+  const { comZ, totalMass } = useShipTelemetry()
+  if (totalMass < 1e-6) return null
+  return (
+    <group position={[0, 0, comZ]}>
+      <mesh>
+        <sphereGeometry args={[0.85, 16, 12]} />
+        <meshStandardMaterial
+          color="#f5c542"
+          emissive="#e8b400"
+          emissiveIntensity={0.55}
+          metalness={0.2}
+          roughness={0.35}
+        />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.45, 0.07, 8, 24]} />
+        <meshStandardMaterial
+          color="#f5c542"
+          emissive="#e8b400"
+          emissiveIntensity={0.35}
+        />
+      </mesh>
+    </group>
+  )
+}
 
-/** DSTV-80 : poutre fixe 120 m + anneau centrifuge Ø 80 m.
- *  Fiche d’ingénierie : `gemini-code-1786923661213.md`.
- */
-export function ExplorationShip({
-  omega,
-  thrust,
-  showShield,
-  elevatorAuto,
-  elevatorPosition,
-  onElevatorPositionChange,
-  fpvMode = 'none',
-}: {
-  omega: number
-  thrust: number
-  showShield: boolean
-  elevatorAuto: boolean
-  elevatorPosition: number
-  onElevatorPositionChange: (position: number) => void
-  fpvMode?: FpvMode
-}) {
-  const ringRef = useRef<Group>(null)
-
-  useFrame((_, delta) => {
-    const ring = ringRef.current
-    if (!ring) return
-    ring.rotation.z += omega * delta
-  })
+/** DSTV-80 : poutre fixe 120 m + modules enfichés sur les slots. */
+export function ExplorationShip() {
+  const { spineSlots } = useShipConfiguration()
+  const heavyCargoOnMedian =
+    spineSlots.find((s) => s.id === 'median')?.mountedModuleId === 'heavy-cargo'
 
   return (
     <group>
-      <FixedSpine showShield={showShield} thrust={thrust} />
-      <group ref={ringRef}>
-        <CentrifugeRing
-          hiddenModules={fpvMode === 'habitat' ? [0, 1] : []}
-        />
-        <TransferElevator
-          auto={elevatorAuto}
-          manualPosition={elevatorPosition}
-          onPositionChange={onElevatorPositionChange}
-          fpv={fpvMode === 'cabin'}
-        />
-        {fpvMode === 'habitat' && <HabitatInterior />}
-      </group>
+      <CentralSpine />
+      {spineSlots.map((slot) => {
+        const module = getShipModule(slot.mountedModuleId)
+        if (!module) return null
+        const ModuleView = module.component
+        const slotPos: [number, number, number] =
+          slot.id === 'intermediate' && heavyCargoOnMedian
+            ? [slot.position[0], slot.position[1], -26]
+            : slot.position
+        return <ModuleView key={slot.id} slotPosition={slotPos} />
+      })}
+      <CenterOfMassMarker />
     </group>
   )
 }

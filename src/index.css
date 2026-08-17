@@ -1,27 +1,27 @@
-@import 'tailwindcss/theme' layer(theme);
-@import 'tailwindcss/utilities' layer(utilities);
+@import "tailwindcss";
 
 :root {
   --font-display: 'Instrument Serif', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
 
-  --ink: #132433;
-  --muted: #5a7184;
-  --accent: #0e7c6b;
-  --accent-deep: #085a4d;
-  --highlight: #e07a2f;
-  --surface: rgba(255, 252, 247, 0.78);
-  --surface-solid: #fffdf9;
-  --border: rgba(19, 36, 51, 0.12);
-  --grid: rgba(19, 36, 51, 0.08);
-  --axis: rgba(19, 36, 51, 0.22);
+  --ink: #f8fafc;
+  --muted: #94a3b8;
+  --accent: #14b8a6;
+  --accent-deep: #2dd4bf;
+  --highlight: #f97316;
+  --surface: rgba(15, 23, 42, 0.88);
+  --surface-solid: #0f172a;
+  --border: rgba(148, 163, 184, 0.25);
+  --grid: rgba(148, 163, 184, 0.15);
+  --axis: rgba(148, 163, 184, 0.4);
 
-  --bg-1: #d9ebe4;
-  --bg-2: #f3e6d4;
-  --bg-3: #c5dce8;
+  --bg-1: #05070d;
+  --bg-2: #0b1329;
+  --bg-3: #0a1120;
 
   font-family: var(--font-body);
   color: var(--ink);
+  background-color: #05070d;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -41,14 +41,25 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
+  background-color: #05070d;
+  color: #f8fafc;
 }
 
 body {
   min-width: 320px;
-  background: var(--bg-1);
+  background: #05070d;
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
+  color: inherit;
+}
+
+button {
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }

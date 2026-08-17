@@ -20,10 +20,6 @@ import {
   MODULE_RADIUS,
   RING_RADIUS,
 } from './constants'
-import {
-  CabinInterior,
-  type CabinTelemetry,
-} from './CabinInterior'
 
 function setLamp(mat: MeshStandardMaterial | null, on: boolean) {
   if (!mat) return
@@ -195,18 +191,15 @@ export function TransferElevator({
   auto,
   manualPosition,
   onPositionChange,
-  fpv = false,
 }: {
   auto: boolean
   manualPosition: number
   onPositionChange: (position: number) => void
-  fpv?: boolean
 }) {
   const cabinRef = useRef<Group>(null)
   const pRef = useRef(0)
   const dirRef = useRef(1)
   const dwellRef = useRef(0.8)
-  const prevPRef = useRef(0)
   const uiAccRef = useRef(0)
   const autoRef = useRef(auto)
   const manualRef = useRef(manualPosition)
@@ -214,13 +207,6 @@ export function TransferElevator({
   const hubB = useRef<MeshStandardMaterial>(null)
   const ringA = useRef<MeshStandardMaterial>(null)
   const ringB = useRef<MeshStandardMaterial>(null)
-  const telemetryRef = useRef<CabinTelemetry>({
-    position: 0,
-    speed: 0,
-    shaking: false,
-    dockedHub: false,
-    dockedRing: true,
-  })
   autoRef.current = auto
   manualRef.current = manualPosition
 
@@ -253,19 +239,6 @@ export function TransferElevator({
     const cabin = cabinRef.current
     if (cabin) cabin.position.x = r
 
-    const dp = (p - prevPRef.current) / Math.max(dt, 1e-4)
-    prevPRef.current = p
-    const moving = dwellRef.current <= 0 && p > 0.02 && p < 0.98
-    const braking = moving && (p < 0.22 || p > 0.78)
-
-    telemetryRef.current = {
-      position: p,
-      speed: moving ? 1.5 : 0,
-      shaking: braking || (moving && Math.abs(dp) > 0.04),
-      dockedHub: p > 0.92,
-      dockedRing: p < 0.08,
-    }
-
     setLamp(hubA.current, p > 0.92)
     setLamp(hubB.current, p > 0.92)
     setLamp(ringA.current, p < 0.08)
@@ -293,10 +266,7 @@ export function TransferElevator({
       <Lamp position={[ringLampX, 0.7, 0.85]} matRef={ringA} />
       <Lamp position={[ringLampX, -0.7, 0.85]} matRef={ringB} />
       <group ref={cabinRef} position={[ELEVATOR_R_RING, 0, 0]}>
-        {!fpv && <ElevatorCabinShell />}
-        {fpv && (
-          <CabinInterior telemetryRef={telemetryRef} fpv />
-        )}
+        <ElevatorCabinShell />
       </group>
     </group>
   )
